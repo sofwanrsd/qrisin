@@ -1,41 +1,190 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# 🚀 QRISin — QRIS Dynamic Generator (Nominal)
 
-## Getting Started
+Dibuat oleh [Wanndev](https://github.com/sofwanrsd)
 
-First, run the development server:
+QRISin adalah aplikasi web open-source berbasis **Next.js** yang digunakan untuk:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Mengupload gambar QRIS statis
+- Membaca RAW QRIS dari gambar (menggunakan jsQR)
+- Menambahkan nominal (TAG 54)
+- Mengubah QRIS statis menjadi **QRIS Dinamis Valid BI**
+- Menghasilkan QR PNG siap-scan
+- Mendukung Dark Mode & tampilan responsif Bootstrap
+
+Project ini cocok untuk:
+
+- Website auto-pembayaran
+- Bot Telegram Payment
+- Online Shop otomatis
+- Sistem kasir digital
+- Developer QRIS tools
+
+---
+
+## ✨ Fitur Utama
+
+### ✔ Convert QRIS Biasa → QRIS Dinamis (Nominal)
+
+Menggunakan algoritma:
+
+- Ubah Tag `01` → `12`
+- Tambah tag nominal `54xx[nominal]`
+- CRC16 dihitung ulang (CRC16-CCITT-FALSE)
+- Struktur QRIS asli merchant **tidak diubah**
+
+### ✔ Upload Gambar QRIS (PNG/JPG)
+
+Gambar dibaca dengan `jsQR` untuk menghasilkan RAW QRIS.
+
+### ✔ API Endpoint
+
+Endpoint bawaan:
+
+## POST /api/generate
+
+Contoh Body:
+
+```json
+{
+  "qris_raw": "000201010212...",
+  "amount": "15000"
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Contoh Response:
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+```
+{
+  "status": true,
+  "qris_dynamic": "000201010212...",
+  "qr_png": "data:image/png;base64,..."
+}
+```
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+## ✔ Modern UI (Bootstrap 5 + Dark Mode)
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+Navbar premium
+Layout rapi & responsif
+Tombol Dark Mode / Light Mode
+Footer dengan branding
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ✔ Tidak menyimpan data
 
-## Learn More
+Aplikasi ini sepenuhnya client-side untuk input gambar dan tidak menyimpan data QR apa pun.
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Teknologi
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+Next.js 14 (Pages Router)
+Bootstrap 5 (CDN)
+jsQR — membaca QR dari gambar
+qrcode — membuat QR PNG Base64
+Custom CRC16 — valid untuk standard QRIS (EMV)
+React Hooks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Instalasi
 
-## Deploy on Vercel
+1. Clone repository
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+git clone https://github.com/sofwanrsd/qrisin
+cd qrisin
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
-# qrisin
+2. Install dependencies
+
+```
+npm install
+```
+
+3. Jalankan development server
+
+```
+npm run dev
+```
+
+Running :
+
+```
+http://localhost:3000
+```
+
+## 📁 Struktur Project
+
+```
+qrisin/
+│
+├─ core/
+│   └─ qris.js            # Logic QRIS: nominal, tag, CRC
+│
+├─ pages/
+│   ├─ layout.js          # Navbar, Dark Mode, Footer
+│   ├─ index.js           # Halaman utama
+│   ├─ docs.js            # Dokumentasi API
+│   └─ api/
+│       └─ generate.js    # API QRIS Dynamic Generator
+│
+├─ styles/
+│   └─ globals.css
+│
+├─ public/
+│   └─ favicon.ico
+│
+├─ package.json
+└─ next.config.js
+```
+
+## 📡 API Documentation (Singkat)
+
+### POST /api/generate
+
+Request:
+
+```
+{
+  "qris_raw": "000201010211...",
+  "amount": "10000"
+}
+```
+
+Response:
+
+```
+{
+  "status": true,
+  "qris_dynamic": "000201010212...",
+  "qr_png": "data:image/png;base64,..."
+}
+```
+
+Jika error:
+
+```
+{
+  "status": false,
+  "error": "QRIS tidak valid"
+}
+```
+
+## 🔐 Validasi QRIS
+
+QRIS dinamis yang dihasilkan:
+
+- Valid EMV
+- Menggunakan CRC16-CCITT-FALSE
+- Bisa discan: Dana, OVO, ShopeePay, Gopay, BCA, BRI, Mandiri, dll.
+
+## 🌙 Dark Mode
+
+- Disimpan ke localStorage
+- Tersedia tombol toggle di navbar
+- Semua halaman ikut berubah
+
+## 🧑‍💻 Kontribusi
+
+- Pull Request sangat diterima.
+- Jika ingin menambah fitur baru
+
+📄 Lisensi
+MIT License
+Created by Wanndev
+© 2025 QRISin

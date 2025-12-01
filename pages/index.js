@@ -1,78 +1,143 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { useState, useRef } from "react";
+import jsQR from "jsqr";
 
 export default function Home() {
+  const [rawQRIS, setRawQRIS] = useState("");
+  const [amount, setAmount] = useState("");
+  const [result, setResult] = useState(null);
+  const canvasRef = useRef(null);
+
+  // Read QR File
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+
+      img.onload = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const qr = jsQR(imgData.data, canvas.width, canvas.height);
+
+        if (!qr || !qr.data) return alert("QR tidak terbaca!");
+
+        setRawQRIS(qr.data);
+      };
+
+      img.src = ev.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  // API call
+  const handleGenerate = async () => {
+    if (!rawQRIS) return alert("Upload QRIS dulu");
+    if (!amount) return alert("Nominal wajib diisi");
+
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ qris_raw: rawQRIS, amount }),
+    });
+
+    const data = await res.json();
+    setResult(data);
+
+    if (!data.status) alert("Error: " + data.error);
+  };
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="row justify-content-center">
+      <div className="col-lg-7">
+        {/* MAIN CARD */}
+        <div
+          className="card shadow-sm p-4 px-5 border-0"
+          style={{ borderRadius: "18px" }}
+        >
+          <h2 className="fw-bold text-center mb-4">
+            Generate QRIS Dinamis (Nominal)
+          </h2>
+
+          <label className="form-label fw-semibold">Upload Gambar QRIS</label>
+          <input
+            type="file"
+            className="form-control mb-4"
+            accept="image/*"
+            onChange={handleUpload}
+          />
+
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+
+          {rawQRIS && (
+            <>
+              <label className="form-label fw-semibold">RAW QRIS</label>
+              <textarea
+                className="form-control mb-4"
+                rows="7"
+                readOnly
+                value={rawQRIS}
+                style={{ fontFamily: "monospace", padding: "12px" }}
+              />
+
+              <label className="form-label fw-semibold">Nominal</label>
+              <input
+                type="number"
+                className="form-control mb-4"
+                placeholder="contoh: 15000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+
+              <button
+                className="btn btn-primary w-100 fw-bold py-3 fs-5"
+                onClick={handleGenerate}
+              >
+                Generate QR Dinamis
+              </button>
+            </>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* RESULT */}
+        {result?.status && (
+          <div
+            className="card shadow-sm mt-4 p-4 border-0"
+            style={{ borderRadius: "18px" }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <h4 className="fw-bold text-center mb-3">QRIS Dinamis</h4>
+
+            <div className="text-center">
+              <img
+                src={result.qr_png}
+                className="img-fluid mb-3"
+                style={{ maxWidth: "240px" }}
+                alt="QRIS"
+              />
+
+              <div className="fw-bold mb-3" style={{ opacity: 0.85 }}>
+                Rp {amount}
+              </div>
+
+              <textarea
+                className="form-control"
+                rows="5"
+                value={result.qris_dynamic}
+                readOnly
+                style={{ fontFamily: "monospace" }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
